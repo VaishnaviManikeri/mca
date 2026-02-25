@@ -7,7 +7,7 @@ const {
   updateBlog,
   deleteBlog
 } = require('../controllers/blogController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authmiddleware');
 
 const upload = multer({ dest: 'uploads/' });
 

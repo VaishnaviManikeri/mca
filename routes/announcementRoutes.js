@@ -6,7 +6,7 @@ const {
   updateAnnouncement,
   deleteAnnouncement
 } = require('../controllers/announcementController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authmiddleware');
 
 // Public routes
 router.get('/', getAllAnnouncements);

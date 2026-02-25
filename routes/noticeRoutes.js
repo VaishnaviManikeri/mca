@@ -7,7 +7,7 @@ const {
   updateNotice,
   deleteNotice
 } = require('../controllers/noticeController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authmiddleware');
 
 const upload = multer({ dest: 'uploads/' });
 
