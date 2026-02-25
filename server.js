@@ -21,7 +21,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",        // local Vite
-      "https://YOUR-FRONTEND.onrender.com" // change after frontend deploy
+      "https://sjimt.in" // change after frontend deploy
     ],
     credentials: true,
   })
