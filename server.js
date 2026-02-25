@@ -1,59 +1,53 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
 const dotenv = require('dotenv');
-const connectDB = require('./config/database');
+const path = require('path');
+const fs = require('fs');
 
-// ================= LOAD ENV VARIABLES =================
 dotenv.config();
 
-// ================= CONNECT DATABASE =================
-connectDB();
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 const app = express();
 
-// ================= MIDDLEWARE =================
+/* ================= CORS CONFIG ================= */
+
 app.use(
   cors({
-    origin: '*', // allow all (safe for now; can restrict later)
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: [
+      "http://localhost:5173",        // local Vite
+      "https://YOUR-FRONTEND.onrender.com" // change after frontend deploy
+    ],
+    credentials: true,
   })
 );
+
+/* ============================================= */
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ================= TEST ROUTES =================
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Root test route (VERY IMPORTANT for Render 404 check)
-app.get('/', (req, res) => {
-  res.send('Backend is running successfully 🚀');
-});
-
-// API test route
-app.use('/api/test', require('./routes/testRoutes'));
-
-// ================= MAIN ROUTES =================
+// Routes
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/gallery', require('./routes/galleryRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
+app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/careers', require('./routes/careerRoutes'));
+app.use('/api/blogs', require('./routes/blogRoutes'));
 
-// ================= 404 HANDLER =================
-app.use((req, res) => {
-  res.status(404).json({ error: 'API route not found' });
-});
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch((err) => console.error('MongoDB error:', err));
 
-// ================= ERROR HANDLER =================
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Something went wrong!',
-    details: err.message,
-  });
-});
-
-// ================= START SERVER =================
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

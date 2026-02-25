@@ -1,44 +1,27 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-const AdminSchema = new mongoose.Schema(
-  {
-    username: {
-      type: String,
-      required: [true, "Username is required"],
-    },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      lowercase: true,
-    },
-    password: {
-      type: String,
-      required: [true, "Password is required"],
-      minlength: 6,
-    },
-    role: {
-      type: String,
-      enum: ["admin", "superadmin"],
-      default: "admin",
-    }
+const adminSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
   },
-  { timestamps: true }
-);
+  password: {
+    type: String,
+    required: true
+  }
+}, { timestamps: true });
 
-// Hash password before saving
-AdminSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+adminSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  this.password = await bcrypt.hash(this.password, 10);
 });
 
-// Compare password
-AdminSchema.methods.comparePassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+adminSchema.methods.comparePassword = function (password) {
+  return bcrypt.compare(password, this.password);
 };
 
-module.exports = mongoose.model("Admin", AdminSchema);
+module.exports = mongoose.model('Admin', adminSchema);

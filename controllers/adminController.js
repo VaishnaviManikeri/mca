@@ -1,120 +1,41 @@
-const Admin = require("../models/Admin");
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
+const Admin = require('../models/Admin');
 
-// Create admin (first time)
-exports.createAdmin = async (req, res) => {
-  try {
-    const { username, email, password, role } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({
-        error: "Username, email, and password are required",
-      });
-    }
-
-    const existingAdmin = await Admin.findOne({ email });
-    if (existingAdmin) {
-      return res.status(400).json({
-        error: "Admin with this email already exists",
-      });
-    }
-
-    const admin = await Admin.create({
-      username,
-      email,
-      password,
-      role: role || "admin",
-    });
-
-    const token = jwt.sign(
-      { id: admin._id, role: admin.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.status(201).json({
-      success: true,
-      message: "Admin created successfully",
-      token,
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        role: admin.role,
-      },
-    });
-  } catch (error) {
-    console.error("Error creating admin:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-    });
-  }
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: '30d'
+  });
 };
 
-// Login
-exports.login = async (req, res) => {
+const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-
-    const admin = await Admin.findOne({ email });
-    if (!admin) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    const isMatch = await admin.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    const token = jwt.sign(
-      { id: admin._id, role: admin.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      token,
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        role: admin.role,
-      },
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-    });
-  }
-};
-
-// Get profile
-exports.getProfile = async (req, res) => {
-  try {
-    const admin = await Admin.findById(req.user.id).select("-password");
+    const admin = await Admin.findOne({ email: email.toLowerCase() });
 
     if (!admin) {
-      return res.status(404).json({ error: "Admin not found" });
+      return res.status(401).json({ message: 'Admin not found' });
+    }
+
+    const match = await admin.comparePassword(password);
+
+    if (!match) {
+      return res.status(401).json({ message: 'Wrong password' });
     }
 
     res.json({
-      success: true,
-      admin,
+      _id: admin._id,
+      email: admin.email,
+      token: generateToken(admin._id)
     });
-  } catch (error) {
-    console.error("Profile error:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
+
+const getDashboard = async (req, res) => {
+  res.json({ message: "Dashboard OK" });
+};
+
+module.exports = { loginAdmin, getDashboard };

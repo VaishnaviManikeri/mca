@@ -1,57 +1,31 @@
 const mongoose = require('mongoose');
 
 const careerSchema = new mongoose.Schema({
-  position: {
+  title: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   department: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
-  location: {
-    type: String,
-    required: true,
-    trim: true
-  },
+  location: String,
   description: {
     type: String,
     required: true
   },
-  requirements: [{
+  requirements: [String],
+  salary: String,
+  type: {
     type: String,
-    required: true
-  }],
-  responsibilities: [{
-    type: String,
-    required: true
-  }],
+    enum: ['Full-time', 'Part-time', 'Contract', 'Internship'],
+    default: 'Full-time'
+  },
+  deadline: Date,
   isActive: {
     type: Boolean,
     default: true
-  },
-  applicationDeadline: {
-    type: Date,
-    required: true
-  },
-  salaryRange: {
-    min: { type: Number },
-    max: { type: Number }
-  },
-  experienceRequired: {
-    type: String,
-    trim: true
   }
-}, {
-  timestamps: true   // ✅ AUTO handles createdAt & updatedAt
-});
-
-// ❌ REMOVE THIS BLOCK COMPLETELY
-// careerSchema.pre('save', function(next) {
-//   this.updatedAt = Date.now();
-//   next();
-// });
+}, { timestamps: true });
 
 module.exports = mongoose.model('Career', careerSchema);

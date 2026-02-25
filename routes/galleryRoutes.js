@@ -1,37 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const galleryController = require('../controllers/galleryController');
-const auth = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const multer = require('multer');
+const {
+  getAllGallery,
+  createGallery,
+  updateGallery,
+  deleteGallery
+} = require('../controllers/galleryController');
+const { protect } = require('../middleware/authMiddleware');
 
-// ================= PUBLIC ROUTES =================
-router.get('/', galleryController.getAllGalleryItems);
+const upload = multer({ dest: 'uploads/' });
 
-// ================= ADMIN ROUTES (PROTECTED) =================
-router.get('/admin/all', auth, galleryController.getAllGalleryItemsAdmin);
+// Public routes
+router.get('/', getAllGallery);
 
-// ================= SINGLE ITEM ROUTES =================
-router.get('/:id', galleryController.getGalleryItemById);
-
-// ================= CRUD (PROTECTED) =================
-router.post(
-  '/',
-  auth,
-  upload.single('image'), // works with Cloudinary
-  galleryController.createGalleryItem
-);
-
-router.put(
-  '/:id',
-  auth,
-  upload.single('image'), // optional image update
-  galleryController.updateGalleryItem
-);
-
-router.delete(
-  '/:id',
-  auth,
-  galleryController.deleteGalleryItem
-);
+// Admin routes
+router.post('/', protect, upload.single('image'), createGallery);
+router.put('/:id', protect, upload.single('image'), updateGallery);
+router.delete('/:id', protect, deleteGallery);
 
 module.exports = router;

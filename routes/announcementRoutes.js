@@ -1,16 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const announcementController = require('../controllers/announcementController');
-const auth = require('../middleware/auth');
+const {
+  getAllAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement
+} = require('../controllers/announcementController');
+const { protect } = require('../middleware/authMiddleware');
 
 // Public routes
-router.get('/', announcementController.getAllAnnouncements);
-router.get('/:id', announcementController.getAnnouncementById);
+router.get('/', getAllAnnouncements);
 
-// Protected routes
-router.post('/', auth, announcementController.createAnnouncement);
-router.put('/:id', auth, announcementController.updateAnnouncement);
-router.delete('/:id', auth, announcementController.deleteAnnouncement);
-router.get('/admin/all', auth, announcementController.getAllAnnouncementsAdmin);
+// Admin routes
+router.post('/', protect, createAnnouncement);
+router.put('/:id', protect, updateAnnouncement);
+router.delete('/:id', protect, deleteAnnouncement);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const announcementSchema = new mongoose.Schema({
+const noticeSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true
@@ -9,14 +9,13 @@ const announcementSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  fileUrl: String,
+  cloudinaryId: String,
   date: {
     type: Date,
     default: Date.now
   },
-  isActive: {
-    type: Boolean,
-    default: true
-  }
+  expiryDate: Date
 }, { timestamps: true });
 
-module.exports = mongoose.model('Announcement', announcementSchema);
+module.exports = mongoose.model('Notice', noticeSchema);
