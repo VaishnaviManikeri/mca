@@ -15,17 +15,21 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
-/* ================= CORS CONFIG ================= */
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",        // local Vite
-      "https://sjimt.in" // change after frontend deploy
-    ],
-    credentials: true,
-  })
-);
-/* ============================================= */
+/* ================= SIMPLE CORS CONFIG ================= */
+
+app.use(cors({
+  origin: [
+    "http://localhost:5173",   // Vite local
+    "http://localhost:3000",   // React local (optional)
+    "https://sjimt.in",        // Production domain
+    "https://www.sjimt.in"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+
+/* ====================================================== */
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -40,7 +44,7 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/careers', require('./routes/careerRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
-app.use('/api/admission', require('./routes/admissionRoutes')); // New admission route
+app.use('/api/admission', require('./routes/admissionRoutes')); // Admission route
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
