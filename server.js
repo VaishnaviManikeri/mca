@@ -10,13 +10,12 @@ dotenv.config();
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  fs.mkdirSync(uploadsDir);
 }
 
 const app = express();
 
 /* ================= CORS CONFIG ================= */
-
 app.use(
   cors({
     origin: [
@@ -26,7 +25,6 @@ app.use(
     credentials: true,
   })
 );
-
 /* ============================================= */
 
 app.use(express.json());
@@ -42,7 +40,7 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/careers', require('./routes/careerRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
-app.use('/api/admissions', require('./routes/admissionRoutes')); // New route
+app.use('/api/admission', require('./routes/admissionRoutes')); // New admission route
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)

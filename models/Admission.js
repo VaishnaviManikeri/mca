@@ -7,49 +7,34 @@ const admissionSchema = new mongoose.Schema({
     end: String
   },
   courseApplied: String,
-  medium: {
-    type: String,
-    enum: ['English', 'Marathi']
-  },
+  medium: String,
 
   // Personal Details
   surname: String,
   firstName: String,
-  fathersName: String,
+  fatherName: String,
   nameInDevnagari: String,
-  mothersName: String,
-  sex: {
-    type: String,
-    enum: ['Male', 'Female']
-  },
+  motherName: String,
+  sex: String,
   nameChange: String,
   dateOfBirth: Date,
-  maritalStatus: {
-    type: String,
-    enum: ['Married', 'Unmarried']
-  },
+  maritalStatus: String,
   bloodGroup: String,
   motherTongue: String,
   nationality: String,
   religion: String,
-  maharashtrian: {
-    type: String,
-    enum: ['Maharashtrian', 'Non-Maharashtrian']
-  },
+  maharashtrian: String,
   aadharCardNo: String,
   cast: String,
   category: String,
-  creamyLayer: {
-    type: String,
-    enum: ['Yes', 'No']
-  },
+  creamyLayer: String,
   otherLanguages: String,
 
   // Address Details
   presentAddress: String,
-  presentPin: String,
+  presentAddressPin: String,
   permanentAddress: String,
-  permanentPin: String,
+  permanentAddressPin: String,
 
   // Contact Details
   studentContact: String,
@@ -57,25 +42,30 @@ const admissionSchema = new mongoose.Schema({
   phone2: String,
   emailId: String,
 
-  // Subjects and Last College
+  // Subjects Offered & Last College
   subjectsOffered: String,
   lastCollegeName: String,
   lastCollegeAddress: String,
 
-  // Academic Records
+  // Academic Records (array of records)
   academicRecords: [{
-    srNo: Number,
     examination: String,
     boardUniversity: String,
     yearOfPassing: String,
     percentage: String
   }],
 
-  // Timestamps
+  // Signatures
+  applicantSignature: String,
+  parentSignature: String,
+  applicationDate: Date,
+
+  // Metadata
   submittedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  ipAddress: String
 });
 
 module.exports = mongoose.model('Admission', admissionSchema);

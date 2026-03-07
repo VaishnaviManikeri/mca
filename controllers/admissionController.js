@@ -1,64 +1,61 @@
 const Admission = require('../models/Admission');
-const { generateExcel } = require('../utils/excelGenerator');
-const fs = require('fs');
+const { writeToExcel } = require('../utils/excelGenerator');
 
-// @desc    Submit new admission form
-// @route   POST /api/admissions
+// @desc    Submit admission form
+// @route   POST /api/admission/submit
 // @access  Public
 const submitAdmission = async (req, res) => {
   try {
-    // Parse academic records if they exist
-    let academicRecords = [];
-    if (req.body.academicRecords) {
-      try {
-        academicRecords = JSON.parse(req.body.academicRecords);
-      } catch (e) {
-        academicRecords = req.body.academicRecords;
-      }
-    }
-
-    // Create admission object
+    // Create new admission record
     const admissionData = {
       ...req.body,
-      academicRecords,
-      dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : null
+      ipAddress: req.ip || req.connection.remoteAddress
     };
 
-    // Save to database
+    // Parse academic records if they come as string
+    if (typeof req.body.academicRecords === 'string') {
+      admissionData.academicRecords = JSON.parse(req.body.academicRecords);
+    }
+
     const admission = new Admission(admissionData);
     await admission.save();
 
-    // Update Excel file with all admissions
-    const allAdmissions = await Admission.find().sort({ submittedAt: -1 });
-    await generateExcel(allAdmissions);
+    // Write to Excel file
+    try {
+      await writeToExcel(admission);
+    } catch (excelError) {
+      console.error('Excel write error:', excelError);
+      // Continue even if Excel write fails
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Application submitted successfully',
+      message: 'Admission form submitted successfully',
       data: admission
     });
   } catch (error) {
-    console.error('Error submitting admission:', error);
+    console.error('Admission submission error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error submitting application',
+      message: 'Error submitting admission form',
       error: error.message
     });
   }
 };
 
-// @desc    Get all admissions (Admin only)
-// @route   GET /api/admissions
+// @desc    Get all admissions (admin only)
+// @route   GET /api/admission/all
 // @access  Private (Admin)
 const getAllAdmissions = async (req, res) => {
   try {
     const admissions = await Admission.find().sort({ submittedAt: -1 });
-    res.json({
+    res.status(200).json({
       success: true,
+      count: admissions.length,
       data: admissions
     });
   } catch (error) {
-    console.error('Error fetching admissions:', error);
+    console.error('Get admissions error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching admissions',
@@ -67,17 +64,17 @@ const getAllAdmissions = async (req, res) => {
   }
 };
 
-// @desc    Download Excel file (Admin only)
-// @route   GET /api/admissions/download
+// @desc    Download Excel file
+// @route   GET /api/admission/download-excel
 // @access  Private (Admin)
 const downloadExcel = async (req, res) => {
   try {
     const admissions = await Admission.find().sort({ submittedAt: -1 });
-    const filePath = await generateExcel(admissions);
+    const filePath = await writeToExcel(admissions, true); // true = return file path
     
     res.download(filePath, 'admissions.xlsx', (err) => {
       if (err) {
-        console.error('Error downloading file:', err);
+        console.error('Download error:', err);
         res.status(500).json({
           success: false,
           message: 'Error downloading file'
@@ -85,7 +82,7 @@ const downloadExcel = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error generating Excel:', error);
+    console.error('Download excel error:', error);
     res.status(500).json({
       success: false,
       message: 'Error generating Excel file',

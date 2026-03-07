@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
-const {
-  submitAdmission,
-  getAllAdmissions,
-  downloadExcel
+const { 
+  submitAdmission, 
+  getAllAdmissions, 
+  downloadExcel 
 } = require('../controllers/admissionController');
+const { protect } = require('../middleware/authMiddleware');
 
 // Public route
-router.post('/', submitAdmission);
+router.post('/submit', submitAdmission);
 
 // Protected admin routes
-router.get('/', protect, getAllAdmissions);
-router.get('/download', protect, downloadExcel);
+router.get('/all', protect, getAllAdmissions);
+router.get('/download-excel', protect, downloadExcel);
 
 module.exports = router;
