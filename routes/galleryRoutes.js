@@ -7,7 +7,7 @@ const {
   updateGallery,
   deleteGallery
 } = require('../controllers/galleryController');
-const { protect } = require('../middleware/authmiddleware');
+const { protect } = require('../middleware/auth');
 
 const upload = multer({ dest: 'uploads/' });
 

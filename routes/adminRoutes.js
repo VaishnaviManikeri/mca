@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { loginAdmin, getDashboard } = require('../controllers/adminController');
-const { protect } = require('../middleware/authmiddleware');
+const { protect } = require('../middleware/auth');
 router.post('/login', loginAdmin);
 router.get('/dashboard', protect, getDashboard);
 

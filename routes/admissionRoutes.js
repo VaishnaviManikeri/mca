@@ -5,7 +5,7 @@ const {
   getAllAdmissions, 
   downloadExcel 
 } = require('../controllers/admissionController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/auth');
 
 // Public route
 router.post('/submit', submitAdmission);

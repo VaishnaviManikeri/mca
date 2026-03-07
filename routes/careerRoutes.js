@@ -6,7 +6,7 @@ const {
   updateCareer,
   deleteCareer
 } = require('../controllers/careerController');
-const { protect } = require('../middleware/authmiddleware');
+const { protect } = require('../middleware/auth');
 
 // Public routes
 router.get('/', getAllCareers);
