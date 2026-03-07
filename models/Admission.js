@@ -6,7 +6,7 @@ const admissionSchema = new mongoose.Schema({
     start: String,
     end: String
   },
-  courseAppliedFor: String,
+  courseApplied: String,
   medium: {
     type: String,
     enum: ['English', 'Marathi']
@@ -32,14 +32,13 @@ const admissionSchema = new mongoose.Schema({
   motherTongue: String,
   nationality: String,
   religion: String,
-  isMaharashtrian: {
+  maharashtrian: {
     type: String,
     enum: ['Maharashtrian', 'Non-Maharashtrian']
   },
   aadharCardNo: String,
   cast: String,
   category: String,
-  otherCategory: String,
   creamyLayer: {
     type: String,
     enum: ['Yes', 'No']
@@ -58,7 +57,7 @@ const admissionSchema = new mongoose.Schema({
   phone2: String,
   emailId: String,
 
-  // Subjects Offered & Last College
+  // Subjects and Last College
   subjectsOffered: String,
   lastCollegeName: String,
   lastCollegeAddress: String,
@@ -72,63 +71,11 @@ const admissionSchema = new mongoose.Schema({
     percentage: String
   }],
 
-  // Signatures
-  studentSignature: String,
-  parentSignature: String,
-  applicationDate: Date,
-
-  // Undertaking - Fees
-  undertakingFees: {
-    parentName: String,
-    studentName: String,
-    studentFatherName: String,
-    course: String,
-    parentSignature: String,
-    studentSignature: String
-  },
-
-  // Undertaking - Attendance
-  undertakingAttendance: {
-    studentName: String,
-    fathersName: String,
-    className: String,
-    branch: String,
-    rollNo: String,
-    parentSignature: String,
-    studentSignature: String
-  },
-
-  // Documents Checklist
-  documents: {
-    gradCertificate: Boolean,
-    tenthMarksheet: Boolean,
-    twelfthMarksheet: Boolean,
-    leavingCertificate: Boolean,
-    migrationCertificate: Boolean,
-    gapAffidavit: Boolean,
-    passportPhotos: Boolean,
-    casteCertificate: Boolean,
-    nameChangeCertificate: Boolean,
-    aadharCard: Boolean
-  },
-
-  // Fees Payment
-  feesPayment: {
-    totalFees: String,
-    registrationFees: String,
-    installments: [{
-      amount: String,
-      dueDate: Date
-    }]
-  },
-
-  // Metadata
+  // Timestamps
   submittedAt: {
     type: Date,
     default: Date.now
-  },
-  ipAddress: String,
-  userAgent: String
+  }
 });
 
 module.exports = mongoose.model('Admission', admissionSchema);
