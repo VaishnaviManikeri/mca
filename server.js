@@ -42,6 +42,7 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/careers', require('./routes/careerRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
+app.use('/api/admissions', require('./routes/admissionRoutes'));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
