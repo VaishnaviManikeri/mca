@@ -37,6 +37,11 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// ================= ✅ PING ROUTE (ADDED) =================
+app.get('/ping', (req, res) => {
+  res.send('✅ Server is alive');
+});
+
 // Routes
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/gallery', require('./routes/galleryRoutes'));
