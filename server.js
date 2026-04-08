@@ -8,11 +8,16 @@ const fs = require('fs');
 dotenv.config();
 
 // Create uploads directory if it doesn't exist
+// Ensure uploads directory exists
+const fs = require('fs');
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
-
+const blogUploadsDir = path.join(uploadsDir, 'blogs');
+if (!fs.existsSync(blogUploadsDir)) {
+  fs.mkdirSync(blogUploadsDir, { recursive: true });
+}
 const app = express();
 
 /* ================= SIMPLE CORS CONFIG ================= */
@@ -35,8 +40,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files
+// Static files - IMPORTANT: This must be before routes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 // ================= ✅ PING ROUTE (ADDED) =================
 app.get('/ping', (req, res) => {
   res.send('✅ Server is alive');
