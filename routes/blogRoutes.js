@@ -6,13 +6,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// Ensure uploads directory exists
+const uploadDir = 'uploads/blogs';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // Configure multer for image upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = 'uploads/blogs';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
@@ -44,9 +46,10 @@ router.get('/', async (req, res) => {
   try {
     const blogs = await Blog.find({ status: 'published' })
       .sort({ createdAt: -1 })
-      .select('title slug excerpt featuredImage author readTime createdAt updatedAt');
+      .select('title slug excerpt featuredImage author readTime createdAt updatedAt tags');
     res.json(blogs);
   } catch (error) {
+    console.error('Error fetching blogs:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -63,6 +66,7 @@ router.get('/:slug', async (req, res) => {
     await blog.save();
     res.json(blog);
   } catch (error) {
+    console.error('Error fetching blog:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -75,6 +79,7 @@ router.get('/admin/all', protect, async (req, res) => {
     const blogs = await Blog.find().sort({ createdAt: -1 });
     res.json(blogs);
   } catch (error) {
+    console.error('Error fetching admin blogs:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -88,6 +93,7 @@ router.get('/admin/:id', protect, async (req, res) => {
     }
     res.json(blog);
   } catch (error) {
+    console.error('Error fetching blog by ID:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -95,7 +101,16 @@ router.get('/admin/:id', protect, async (req, res) => {
 // CREATE new blog
 router.post('/admin', protect, upload.single('featuredImage'), async (req, res) => {
   try {
+    console.log('Received blog creation request');
+    console.log('Body:', req.body);
+    console.log('File:', req.file);
+    
     const { title, content, excerpt, author, status, metaTitle, metaDescription, tags } = req.body;
+    
+    // Validate required fields
+    if (!title || !content) {
+      return res.status(400).json({ error: 'Title and content are required' });
+    }
     
     // Generate slug from title
     let slug = title
@@ -113,33 +128,44 @@ router.post('/admin', protect, upload.single('featuredImage'), async (req, res) 
     }
     
     // Calculate read time (approx 200 words per minute)
-    const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).length;
+    const plainText = content.replace(/<[^>]*>/g, '');
+    const wordCount = plainText.split(/\s+/).filter(word => word.length > 0).length;
     const readTime = Math.max(1, Math.ceil(wordCount / 200));
+    
+    // Parse tags
+    let tagsArray = [];
+    if (tags) {
+      tagsArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+    }
     
     const blog = new Blog({
       title,
       slug,
       content,
-      excerpt: excerpt || content.substring(0, 160).replace(/<[^>]*>/g, ''),
+      excerpt: excerpt || plainText.substring(0, 160),
       featuredImage: req.file ? `/uploads/blogs/${req.file.filename}` : null,
       author: author || 'Admin',
       readTime,
       status: status || 'draft',
       metaTitle: metaTitle || title,
-      metaDescription: metaDescription || excerpt || content.substring(0, 160).replace(/<[^>]*>/g, ''),
-      tags: tags ? tags.split(',').map(tag => tag.trim()) : []
+      metaDescription: metaDescription || (excerpt || plainText.substring(0, 160)),
+      tags: tagsArray
     });
     
     await blog.save();
+    console.log('Blog created successfully:', blog._id);
     res.status(201).json(blog);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error creating blog:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
 // UPDATE blog
 router.put('/admin/:id', protect, upload.single('featuredImage'), async (req, res) => {
   try {
+    console.log('Received blog update request for ID:', req.params.id);
+    
     const blog = await Blog.findById(req.params.id);
     if (!blog) {
       return res.status(404).json({ error: 'Blog not found' });
@@ -167,14 +193,22 @@ router.put('/admin/:id', protect, upload.single('featuredImage'), async (req, re
     // Update read time if content changed
     let readTime = blog.readTime;
     if (content && content !== blog.content) {
-      const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).length;
+      const plainText = content.replace(/<[^>]*>/g, '');
+      const wordCount = plainText.split(/\s+/).filter(word => word.length > 0).length;
       readTime = Math.max(1, Math.ceil(wordCount / 200));
+    }
+    
+    // Parse tags
+    let tagsArray = blog.tags;
+    if (tags !== undefined) {
+      tagsArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
     }
     
     blog.title = title || blog.title;
     blog.slug = slug;
     blog.content = content || blog.content;
-    blog.excerpt = excerpt || content?.substring(0, 160).replace(/<[^>]*>/g, '') || blog.excerpt;
+    blog.excerpt = excerpt || (content ? content.replace(/<[^>]*>/g, '').substring(0, 160) : blog.excerpt);
+    
     if (req.file) {
       // Delete old image if exists
       if (blog.featuredImage) {
@@ -185,17 +219,20 @@ router.put('/admin/:id', protect, upload.single('featuredImage'), async (req, re
       }
       blog.featuredImage = `/uploads/blogs/${req.file.filename}`;
     }
+    
     blog.author = author || blog.author;
     blog.readTime = readTime;
     blog.status = status || blog.status;
     blog.metaTitle = metaTitle || blog.metaTitle;
     blog.metaDescription = metaDescription || blog.metaDescription;
-    blog.tags = tags ? tags.split(',').map(tag => tag.trim()) : blog.tags;
+    blog.tags = tagsArray;
     
     await blog.save();
+    console.log('Blog updated successfully:', blog._id);
     res.json(blog);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error updating blog:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
@@ -218,6 +255,7 @@ router.delete('/admin/:id', protect, async (req, res) => {
     await blog.deleteOne();
     res.json({ message: 'Blog deleted successfully' });
   } catch (error) {
+    console.error('Error deleting blog:', error);
     res.status(500).json({ error: error.message });
   }
 });
