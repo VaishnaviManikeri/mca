@@ -3,62 +3,49 @@ const mongoose = require('mongoose');
 const blogSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Title is required']
+    required: true
   },
   slug: {
     type: String,
     required: true,
-    unique: true,
-    trim: true
+    unique: true
   },
   content: {
     type: String,
-    required: [true, 'Content is required']
+    required: true
+  },
+  excerpt: {
+    type: String,
+    required: true
   },
   author: {
     type: String,
-    required: [true, 'Author is required']
+    required: true
   },
-  imageUrl: {
-    type: String,
-    default: ''
-  },
-  cloudinaryId: {
-    type: String,
-    default: ''
-  },
-  tags: [{
-    type: String,
-    trim: true
-  }],
-  readTime: {
-    type: Number,
-    default: 0
-  },
+  authorImage: String,
+  imageUrl: String,
+  cloudinaryId: String,
+  tags: [String],
+  readTime: Number,
   metaTitle: String,
   metaDescription: String,
   isPublished: {
     type: Boolean,
     default: true
+  },
+  views: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 
-// Generate slug from title before saving (only if slug is not provided)
-blogSchema.pre('save', async function(next) {
-  if (this.isModified('title') && (!this.slug || this.slug === '')) {
-    let baseSlug = this.title
+// Generate slug from title
+blogSchema.pre('save', function(next) {
+  if (this.isModified('title') && !this.slug) {
+    this.slug = this.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
-    
-    // Check if slug exists
-    let slug = baseSlug;
-    let counter = 1;
-    while (await mongoose.model('Blog').findOne({ slug, _id: { $ne: this._id } })) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-    this.slug = slug;
   }
   next();
 });
