@@ -1,5 +1,6 @@
 const Blog = require('../models/Blog');
 const cloudinary = require('../config/cloudinary');
+const fs = require('fs');
 
 const getAllBlogs = async (req, res) => {
   try {
@@ -8,6 +9,17 @@ const getAllBlogs = async (req, res) => {
     res.json(blogs);
   } catch (error) {
     console.error('Error fetching blogs:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getAllBlogsAdmin = async (req, res) => {
+  try {
+    const blogs = await Blog.find({})
+      .sort({ createdAt: -1 });
+    res.json(blogs);
+  } catch (error) {
+    console.error('Error fetching all blogs:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -27,58 +39,62 @@ const getBlogBySlug = async (req, res) => {
 
 const createBlog = async (req, res) => {
   try {
-    console.log('Received blog creation request:', req.body);
-    console.log('File received:', req.file);
+    console.log('Received blog creation request');
+    console.log('Body:', req.body);
+    console.log('File:', req.file);
 
-    let imageUrl, cloudinaryId;
+    let imageUrl = '';
+    let cloudinaryId = '';
 
+    // Handle image upload if file exists
     if (req.file) {
-      // Check if cloudinary is configured
-      if (!cloudinary || !cloudinary.uploader) {
-        console.error('Cloudinary not configured properly');
-        return res.status(500).json({ message: 'Image upload service not configured' });
-      }
-      
       try {
+        // Check if cloudinary is configured
+        if (!cloudinary.config().cloud_name) {
+          console.error('Cloudinary not configured properly');
+          return res.status(500).json({ message: 'Cloudinary configuration missing' });
+        }
+
         const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'blogs'
+          folder: 'blogs',
+          use_filename: true,
+          unique_filename: true
         });
+        
         imageUrl = result.secure_url;
         cloudinaryId = result.public_id;
+        
+        // Remove temporary file
+        fs.unlinkSync(req.file.path);
       } catch (cloudinaryError) {
         console.error('Cloudinary upload error:', cloudinaryError);
-        return res.status(500).json({ message: 'Failed to upload image to cloud storage' });
+        return res.status(500).json({ message: 'Failed to upload image: ' + cloudinaryError.message });
       }
     }
 
-    // Generate slug from title if not provided
-    let slug = req.body.slug;
-    if (!slug && req.body.title) {
-      slug = req.body.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-    }
+    // Calculate read time (approx 200 words per minute)
+    const textContent = req.body.content.replace(/<[^>]*>/g, '');
+    const wordCount = textContent.split(/\s+/).length;
+    const readTime = Math.ceil(wordCount / 200);
 
-    // Check if slug already exists
-    const existingBlog = await Blog.findOne({ slug });
-    if (existingBlog) {
-      slug = `${slug}-${Date.now()}`;
-    }
-
+    // Create blog data
     const blogData = {
       title: req.body.title,
-      slug: slug,
       content: req.body.content,
       author: req.body.author,
       imageUrl,
       cloudinaryId,
       tags: req.body.tags ? (Array.isArray(req.body.tags) ? req.body.tags : JSON.parse(req.body.tags)) : [],
-      readTime: req.body.readTime || Math.ceil(req.body.content.length / 1000),
-      metaTitle: req.body.metaTitle,
-      metaDescription: req.body.metaDescription,
+      readTime: readTime,
+      metaTitle: req.body.metaTitle || req.body.title,
+      metaDescription: req.body.metaDescription || req.body.content.substring(0, 160).replace(/<[^>]*>/g, ''),
       isPublished: req.body.isPublished === 'true' || req.body.isPublished === true
     };
+
+    // Only add slug if provided, otherwise let pre-save hook generate it
+    if (req.body.slug && req.body.slug.trim()) {
+      blogData.slug = req.body.slug;
+    }
 
     const blog = await Blog.create(blogData);
     res.status(201).json(blog);
@@ -86,8 +102,7 @@ const createBlog = async (req, res) => {
     console.error('Error creating blog:', error);
     res.status(500).json({ 
       message: 'Failed to create blog post',
-      error: error.message,
-      details: error.errors 
+      error: error.message
     });
   }
 };
@@ -103,7 +118,9 @@ const updateBlog = async (req, res) => {
     let imageUrl = blog.imageUrl;
     let cloudinaryId = blog.cloudinaryId;
 
+    // Handle new image upload
     if (req.file) {
+      // Delete old image if exists
       if (blog.cloudinaryId) {
         try {
           await cloudinary.uploader.destroy(blog.cloudinaryId);
@@ -118,36 +135,41 @@ const updateBlog = async (req, res) => {
         });
         imageUrl = result.secure_url;
         cloudinaryId = result.public_id;
+        
+        // Remove temporary file
+        fs.unlinkSync(req.file.path);
       } catch (error) {
         console.error('Error uploading new image:', error);
+        return res.status(500).json({ message: 'Failed to upload new image' });
       }
     }
 
-    // Handle slug update
-    let slug = req.body.slug;
-    if (!slug && req.body.title && req.body.title !== blog.title) {
-      slug = req.body.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-      
-      // Check if new slug already exists
-      const existingBlog = await Blog.findOne({ slug, _id: { $ne: req.params.id } });
-      if (existingBlog) {
-        slug = `${slug}-${Date.now()}`;
-      }
+    // Calculate read time
+    const textContent = req.body.content.replace(/<[^>]*>/g, '');
+    const wordCount = textContent.split(/\s+/).length;
+    const readTime = Math.ceil(wordCount / 200);
+
+    const updateData = {
+      title: req.body.title || blog.title,
+      content: req.body.content || blog.content,
+      author: req.body.author || blog.author,
+      imageUrl,
+      cloudinaryId,
+      tags: req.body.tags ? (Array.isArray(req.body.tags) ? req.body.tags : JSON.parse(req.body.tags)) : blog.tags,
+      readTime: readTime,
+      metaTitle: req.body.metaTitle || req.body.title || blog.metaTitle,
+      metaDescription: req.body.metaDescription || blog.metaDescription,
+      isPublished: req.body.isPublished === 'true' || req.body.isPublished === true || req.body.isPublished === blog.isPublished
+    };
+
+    // Only update slug if explicitly provided and different
+    if (req.body.slug && req.body.slug.trim() && req.body.slug !== blog.slug) {
+      updateData.slug = req.body.slug;
     }
 
     const updatedBlog = await Blog.findByIdAndUpdate(
       req.params.id,
-      {
-        ...req.body,
-        slug: slug || blog.slug,
-        imageUrl,
-        cloudinaryId,
-        tags: req.body.tags ? (Array.isArray(req.body.tags) ? req.body.tags : JSON.parse(req.body.tags)) : blog.tags,
-        isPublished: req.body.isPublished === 'true' || req.body.isPublished === true || req.body.isPublished === blog.isPublished
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -166,7 +188,8 @@ const deleteBlog = async (req, res) => {
       return res.status(404).json({ message: 'Blog not found' });
     }
 
-    if (blog && blog.cloudinaryId) {
+    // Delete image from cloudinary if exists
+    if (blog.cloudinaryId) {
       try {
         await cloudinary.uploader.destroy(blog.cloudinaryId);
       } catch (error) {
@@ -182,4 +205,11 @@ const deleteBlog = async (req, res) => {
   }
 };
 
-module.exports = { getAllBlogs, getBlogBySlug, createBlog, updateBlog, deleteBlog };
+module.exports = { 
+  getAllBlogs, 
+  getBlogBySlug, 
+  createBlog, 
+  updateBlog, 
+  deleteBlog,
+  getAllBlogsAdmin 
+};
