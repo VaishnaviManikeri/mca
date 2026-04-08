@@ -18,7 +18,7 @@ const blogSchema = new mongoose.Schema({
   },
   excerpt: {
     type: String,
-    required: true
+    default: ''
   },
   featuredImage: {
     type: String,
@@ -26,12 +26,10 @@ const blogSchema = new mongoose.Schema({
   },
   author: {
     type: String,
-    required: true,
     default: 'Admin'
   },
   readTime: {
     type: Number,
-    required: true,
     default: 3
   },
   status: {
@@ -45,11 +43,11 @@ const blogSchema = new mongoose.Schema({
   },
   metaTitle: {
     type: String,
-    trim: true
+    default: ''
   },
   metaDescription: {
     type: String,
-    trim: true
+    default: ''
   },
   tags: [{
     type: String,
@@ -58,5 +56,8 @@ const blogSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Create index for better search performance
+blogSchema.index({ title: 'text', content: 'text' });
 
 module.exports = mongoose.model('Blog', blogSchema);
