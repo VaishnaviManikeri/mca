@@ -49,6 +49,7 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/careers', require('./routes/careerRoutes'));
 // Add this with other routes
+// Add this line with your other routes (around line 70-80 in your server.js)
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/admission', require('./routes/admissionRoutes')); // Admission route
 
