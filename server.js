@@ -48,6 +48,7 @@ app.use('/api/gallery', require('./routes/galleryRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/careers', require('./routes/careerRoutes'));
+// Add this with other routes
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/admission', require('./routes/admissionRoutes')); // Admission route
 
