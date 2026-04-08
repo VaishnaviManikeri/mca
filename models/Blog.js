@@ -10,7 +10,6 @@ const blogSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    lowercase: true,
     trim: true
   },
   content: {
@@ -19,67 +18,45 @@ const blogSchema = new mongoose.Schema({
   },
   excerpt: {
     type: String,
-    required: true,
-    maxLength: 200
+    required: true
   },
   featuredImage: {
     type: String,
-    required: true
+    default: null
   },
   author: {
-    name: {
-      type: String,
-      required: true,
-      default: 'Admin'
-    },
-    avatar: String
+    type: String,
+    required: true,
+    default: 'Admin'
   },
-  readingTime: {
+  readTime: {
     type: Number,
-    required: true
+    required: true,
+    default: 3
   },
-  tags: [String],
-  metaTitle: String,
-  metaDescription: String,
   status: {
     type: String,
     enum: ['draft', 'published'],
-    default: 'published'
+    default: 'draft'
   },
   views: {
     type: Number,
     default: 0
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  metaTitle: {
+    type: String,
+    trim: true
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Generate slug from title before saving
-blogSchema.pre('save', function(next) {
-  if (this.isModified('title')) {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-  }
-  this.updatedAt = Date.now();
-  next();
-});
-
-// Calculate reading time
-blogSchema.pre('save', function(next) {
-  if (this.isModified('content')) {
-    const wordsPerMinute = 200;
-    const wordCount = this.content.replace(/<[^>]*>/g, '').split(/\s+/).length;
-    this.readingTime = Math.ceil(wordCount / wordsPerMinute);
-  }
-  next();
+  metaDescription: {
+    type: String,
+    trim: true
+  },
+  tags: [{
+    type: String,
+    trim: true
+  }]
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Blog', blogSchema);
