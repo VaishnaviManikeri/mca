@@ -7,15 +7,16 @@ const fs = require('fs');
 
 dotenv.config();
 
-// Create uploads directory if it doesn't exist
+const app = express();
+
+/* ================= CREATE UPLOADS FOLDER ================= */
+
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
-const app = express();
-
-/* ================= FIXED CORS CONFIG ================= */
+/* ================= ✅ ADVANCED CORS FIX ================= */
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -30,9 +31,10 @@ app.use(cors({
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
+      return callback(null, true);
     } else {
-      callback(new Error("CORS not allowed"));
+      console.log("❌ Blocked by CORS:", origin);
+      return callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -40,37 +42,42 @@ app.use(cors({
   credentials: true
 }));
 
-// ✅ VERY IMPORTANT (THIS YOU MISSED)
+// ✅ VERY IMPORTANT (Fix preflight issue)
 app.options('*', cors());
 
-/* ===================================================== */
-
-/* ====================================================== */
+/* ======================================================== */
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
+/* ================= STATIC FILES ================= */
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ================= ✅ PING ROUTE (ADDED) =================
+/* ================= ROUTES ================= */
+
 app.get('/ping', (req, res) => {
   res.send('✅ Server is alive');
 });
 
-// Routes
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/gallery', require('./routes/galleryRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/careers', require('./routes/careerRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
-app.use('/api/admission', require('./routes/admissionRoutes')); // Admission route
+app.use('/api/admission', require('./routes/admissionRoutes'));
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB error:', err));
+/* ================= DATABASE ================= */
+
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch((err) => console.error('MongoDB error:', err));
+
+/* ================= SERVER ================= */
 
 const PORT = process.env.PORT || 5000;
 
