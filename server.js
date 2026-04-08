@@ -15,19 +15,35 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
-/* ================= SIMPLE CORS CONFIG ================= */
+/* ================= FIXED CORS CONFIG ================= */
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://sjimt.in",
+  "https://www.sjimt.in"
+];
 
 app.use(cors({
-  origin: [
-    "http://localhost:5173",   // Vite local
-    "http://localhost:3000",   // React local (optional)
-    "https://sjimt.in",        // Production domain
-    "https://www.sjimt.in"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  origin: function (origin, callback) {
+    // allow requests with no origin (like Postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS not allowed"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+
+// ✅ VERY IMPORTANT (THIS YOU MISSED)
+app.options('*', cors());
+
+/* ===================================================== */
 
 /* ====================================================== */
 
