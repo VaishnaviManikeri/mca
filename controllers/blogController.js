@@ -11,6 +11,18 @@ const getAllBlogs = async (req, res) => {
   }
 };
 
+const getBlogBySlug = async (req, res) => {
+  try {
+    const blog = await Blog.findOne({ slug: req.params.slug, isPublished: true });
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+    res.json(blog);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const createBlog = async (req, res) => {
   try {
     let imageUrl, cloudinaryId;
@@ -86,4 +98,4 @@ const deleteBlog = async (req, res) => {
   }
 };
 
-module.exports = { getAllBlogs, createBlog, updateBlog, deleteBlog };
+module.exports = { getAllBlogs, getBlogBySlug, createBlog, updateBlog, deleteBlog };
