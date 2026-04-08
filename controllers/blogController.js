@@ -17,6 +17,8 @@ const getBlogBySlug = async (req, res) => {
     if (!blog) {
       return res.status(404).json({ message: 'Blog not found' });
     }
+    blog.views += 1;
+    await blog.save();
     res.json(blog);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -35,8 +37,13 @@ const createBlog = async (req, res) => {
       cloudinaryId = result.public_id;
     }
 
+    // Generate excerpt from content (strip HTML tags)
+    const plainText = req.body.content.replace(/<[^>]*>/g, '');
+    const excerpt = plainText.substring(0, 160) + '...';
+
     const blog = await Blog.create({
       ...req.body,
+      excerpt,
       imageUrl,
       cloudinaryId
     });
@@ -71,9 +78,16 @@ const updateBlog = async (req, res) => {
       cloudinaryId = result.public_id;
     }
 
+    // Update excerpt if content changed
+    let excerpt = blog.excerpt;
+    if (req.body.content && req.body.content !== blog.content) {
+      const plainText = req.body.content.replace(/<[^>]*>/g, '');
+      excerpt = plainText.substring(0, 160) + '...';
+    }
+
     const updatedBlog = await Blog.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, imageUrl, cloudinaryId },
+      { ...req.body, excerpt, imageUrl, cloudinaryId },
       { new: true }
     );
 
@@ -98,4 +112,13 @@ const deleteBlog = async (req, res) => {
   }
 };
 
-module.exports = { getAllBlogs, getBlogBySlug, createBlog, updateBlog, deleteBlog };
+const getAdminBlogs = async (req, res) => {
+  try {
+    const blogs = await Blog.find().sort({ createdAt: -1 });
+    res.json(blogs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { getAllBlogs, getBlogBySlug, createBlog, updateBlog, deleteBlog, getAdminBlogs };
