@@ -14,38 +14,29 @@ const blogSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  excerpt: {
-    type: String,
-    required: true
-  },
   author: {
     type: String,
     required: true
   },
-  authorImage: String,
   imageUrl: String,
   cloudinaryId: String,
   tags: [String],
   readTime: Number,
-  metaTitle: String,
-  metaDescription: String,
   isPublished: {
     type: Boolean,
     default: true
   },
-  views: {
-    type: Number,
-    default: 0
-  }
+  metaTitle: String,
+  metaDescription: String
 }, { timestamps: true });
 
-// Generate slug from title
+// Create slug from title
 blogSchema.pre('save', function(next) {
-  if (this.isModified('title') && !this.slug) {
+  if (this.isModified('title')) {
     this.slug = this.title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+      .replace(/[^\w\s]/g, '')
+      .replace(/\s+/g, '-');
   }
   next();
 });
