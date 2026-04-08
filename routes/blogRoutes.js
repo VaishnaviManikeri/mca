@@ -8,11 +8,12 @@ const {
   getBlogBySlug,
   createBlog,
   updateBlog,
-  deleteBlog
+  deleteBlog,
+  getAllBlogsAdmin
 } = require('../controllers/blogController');
 const { protect } = require('../middleware/auth');
 
-// Configure multer for file upload
+// Configure multer for memory storage (better for cloudinary)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = 'uploads/';
@@ -27,20 +28,27 @@ const storage = multer.diskStorage({
   }
 });
 
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Only images are allowed (jpeg, jpg, png, gif, webp)'));
+  }
+};
+
 const upload = multer({ 
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only images are allowed'), false);
-    }
-  }
+  fileFilter: fileFilter
 });
 
 // Public routes
 router.get('/', getAllBlogs);
+router.get('/all', protect, getAllBlogsAdmin); // Admin route to get all blogs
 router.get('/:slug', getBlogBySlug);
 
 // Admin routes
