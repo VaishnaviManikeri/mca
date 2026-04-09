@@ -6,22 +6,29 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configure multer for Render.com (use /tmp for writes)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = '/tmp/uploads/blogs';
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
+// Use memory storage instead of disk storage for Render.com
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
 });
+
+// Helper function to convert buffer to base64
+const bufferToBase64 = (buffer, mimetype) => {
+  return `data:${mimetype};base64,${buffer.toString('base64')}`;
+};
 
 // Public routes
 router.get('/', async (req, res) => {
@@ -55,6 +62,16 @@ router.get('/admin/all', protect, async (req, res) => {
   }
 });
 
+router.get('/admin/:id', protect, async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ error: 'Not found' });
+    res.json(blog);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/admin', protect, upload.single('featuredImage'), async (req, res) => {
   try {
     const { title, content, excerpt, author, status, tags } = req.body;
@@ -74,12 +91,18 @@ router.post('/admin', protect, upload.single('featuredImage'), async (req, res) 
     const wordCount = plainText.split(/\s+/).length;
     const readTime = Math.max(1, Math.ceil(wordCount / 200));
     
+    // Process image - store as base64 if uploaded
+    let featuredImage = null;
+    if (req.file) {
+      featuredImage = bufferToBase64(req.file.buffer, req.file.mimetype);
+    }
+    
     const blog = new Blog({
       title,
       slug,
       content,
       excerpt: excerpt || plainText.substring(0, 160),
-      featuredImage: req.file ? `/uploads/blogs/${req.file.filename}` : null,
+      featuredImage,
       author: author || 'Admin',
       readTime,
       status: status || 'draft',
@@ -120,7 +143,11 @@ router.put('/admin/:id', protect, upload.single('featuredImage'), async (req, re
       blog.readTime = Math.max(1, Math.ceil(plainText.split(/\s+/).length / 200));
     }
     
-    if (req.file) blog.featuredImage = `/uploads/blogs/${req.file.filename}`;
+    // Process new image if uploaded
+    if (req.file) {
+      blog.featuredImage = bufferToBase64(req.file.buffer, req.file.mimetype);
+    }
+    
     if (excerpt) blog.excerpt = excerpt;
     if (author) blog.author = author;
     if (status) blog.status = status;
