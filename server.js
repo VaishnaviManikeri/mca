@@ -1,9 +1,10 @@
 const express = require('express');
+const fs = require('fs');   // ✅ only once
+
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
-const fs = require('fs');
 
 dotenv.config();
 
