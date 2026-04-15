@@ -46,6 +46,16 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+/* ================= ROOT API (HOSTINGER CHECK) ================= */
+
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "🚀 Backend is running successfully on Hostinger",
+    timestamp: new Date()
+  });
+});
+
 /* ================= HEALTH CHECK ================= */
 
 app.get('/ping', (req, res) => {
@@ -70,7 +80,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 /* ================= SERVER ================= */
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5004;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
